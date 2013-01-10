@@ -2,16 +2,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <algorithm>
+#include <deque>
 #include <vector>
 #include <sys/time.h>
 using namespace std;
 
 // the contents of the array don't really matter
 // not using c++11 so no move semantics, so pass by reference
-void fill_array(vector<int>& arr, size_t sz) {
+template <typename T>
+void fill_array(T& arr, size_t sz) {
   arr.clear();
   for (size_t i = 0; i < sz; ++i) {
-    arr.push_back(0);
+    arr.push_back(typename T::value_type());
   }
 }
 
@@ -29,16 +31,30 @@ void time(const char *name, size_t sz) {
   fill_array(arr, sz);
 
   T t;
+  t.prepare(sz);
   struct timeval start, end;
   gettimeofday(&start, NULL);
-  t(arr);
+  t.execute();
   gettimeofday(&end, NULL);
 
   size_t usecs = (end.tv_sec-start.tv_sec)*1000000+(end.tv_usec-start.tv_usec);
   printf("%s: %f msecs\n", name, usecs/1000.0);
 }
 
-struct pop_front {
+template <typename T, typename V>
+struct array_test {
+  void prepare(size_t sz) {
+    fill_array(arr, sz);
+  }
+
+  void execute() {
+    static_cast<V*>(this)->operator()(arr);
+  }
+
+  T arr;
+};
+
+struct pop_front : array_test<vector<int>, pop_front> {
   void operator()(vector<int>& arr) {
     while (!arr.empty())
       // pop_front doesn't exist, which I think proves me right
@@ -47,7 +63,14 @@ struct pop_front {
   }
 };
 
-struct pop_back {
+struct deque_pop_front : array_test<deque<int>, deque_pop_front> {
+  void operator()(deque<int>& arr) {
+    while (!arr.empty())
+      arr.pop_front();
+  }
+};
+
+struct pop_back : array_test<vector<int>, pop_back> {
   void operator()(vector<int>& arr) {
     reverse(arr);
     while (!arr.empty())
@@ -77,6 +100,7 @@ int main(int argc, char *argv[]) {
          end = args.end(); iter != end; ++iter) {
     time<pop_back>("pop_back", *iter);
     time<pop_front>("pop_front", *iter);
+    time<deque_pop_front>("deque_pop_front", *iter);
   }
   return 0;
 }
