@@ -34,6 +34,13 @@ struct str *str_cat(struct str *self, const char *other) {
   return self;
 }
 
+void str_del(struct str *self) {
+  if (self) free(self->data);
+  self->data = NULL;
+  self->len = 0;
+  self->capacity = 0;
+}
+
 void str_free(struct str *self) {
   if (self) free(self->data);
   free(self);
