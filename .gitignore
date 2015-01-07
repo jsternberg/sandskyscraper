@@ -1,3 +1,6 @@
-/a.out
 *~
 *.swp
+/compress
+/fisher-yates
+/gcd
+/vector-bigo
